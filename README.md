@@ -71,10 +71,10 @@ Follow these steps to set up Google Sheets API access:
 ### Step 5: Create the Google Sheet
 Create a Google Sheets document to store the expenses. You can start with the following structure:
 
-| Date & Time       | Amount | Category  | Description |     | Budget | Budget Set On |
-|-------------------|--------|-----------|-------------|-----|--------|---------------|
-| 2025-04-29 12:00  | 100    | Food      | Lunch       |     | 1000   | 2025-04-01    |
-| ...               | ...    | ...       | ...         |     | ...    | ...           |
+| Date & Time       | Amount | Category  | Description |
+|-------------------|--------|-----------|-------------|
+| 2025-04-29 12:00  | 100    | Food      | Lunch       |
+| ...               | ...    | ...       | ...         |
 
 - Make sure the sheet has the appropriate columns for `Date & Time`,`Amount`, `Category`, `Description`, `Budget`, and `Budget Set On`.
 
