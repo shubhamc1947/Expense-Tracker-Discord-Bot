@@ -25,37 +25,37 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const category = interaction.options.getString('category');
     const description = interaction.options.getString('description') || 'No description';
     const timestamp = new Date().toLocaleString();
-    const username = interaction.user.username;
 
     const sheets = google.sheets({ version: 'v4', auth: await auth.getClient() });
 
     try {
-      await sheets.spreadsheets.values.append({
+        await sheets.spreadsheets.values.append({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Sheet1!A:E',
+        range: 'Sheet1!A:D',  // Removed the username column
         valueInputOption: 'RAW',
         requestBody: {
-          values: [[timestamp, username, amount, category, description]],
+            values: [[timestamp, amount, category, description]],  // Removed username
         },
-      });
+        });
 
-      const embed = new EmbedBuilder()
+        const embed = new EmbedBuilder()
         .setTitle('✅ Expense Added')
         .setColor(0x00FF00)
         .addFields(
-          { name: 'Amount', value: `₹${amount}`, inline: true },
-          { name: 'Category', value: category, inline: true },
-          { name: 'Description', value: description },
+            { name: 'Amount', value: `₹${amount}`, inline: true },
+            { name: 'Category', value: category, inline: true },
+            { name: 'Description', value: description },
         )
-        .setFooter({ text: `Added by ${username}` })
+        .setFooter({ text: `Added at ${timestamp}` })
         .setTimestamp();
 
-      await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed] });
     } catch (error) {
-      console.error('❌ Error:', error);
-      await interaction.reply('There was an error adding your expense.');
+        console.error('❌ Error:', error);
+        await interaction.reply('There was an error adding your expense.');
     }
-  }
+    }
+
 });
 
 client.login(process.env.DISCORD_TOKEN);
