@@ -1,4 +1,3 @@
-// deploy-commands.js
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
 require('dotenv').config();
 
@@ -24,10 +23,22 @@ const commands = [
       option.setName('description')
         .setDescription('Expense description')
         .setRequired(false)),
+  new SlashCommandBuilder()
+    .setName('listexpenses')
+    .setDescription('List all expenses'),
+  new SlashCommandBuilder()
+    .setName('summary')
+    .setDescription('Get last 5 transactions'),
+  new SlashCommandBuilder()
+    .setName('setbudget')
+    .setDescription('Set a monthly budget')
+    .addNumberOption(option =>
+      option.setName('budget')
+        .setDescription('Monthly budget')
+        .setRequired(true)),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
 (async () => {
   try {
     console.log('⏳ Registering slash commands...');
@@ -37,6 +48,6 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     );
     console.log('✅ Slash commands registered.');
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error registering commands:', error);
   }
 })();
