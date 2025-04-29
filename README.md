@@ -1,3 +1,9 @@
+
+
+
+https://github.com/user-attachments/assets/92035c5a-94ba-478f-9c9c-697a40129454
+
+
 Here's a detailed `README.md` for your project, explaining all the setup steps for the bot:
 
 ```markdown
