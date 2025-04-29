@@ -25,7 +25,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // 🔹 /addexpense
   if (interaction.commandName === 'addexpense') {
-    const amount = interaction.options.getString('amount');
+    const amount = parseFloat(interaction.options.getString('amount'));
     const category = interaction.options.getString('category');
     const description = interaction.options.getString('description') || 'No description';
     const timestamp = new Date().toLocaleString();
@@ -40,6 +40,35 @@ client.on(Events.InteractionCreate, async (interaction) => {
         },
       });
 
+      // Fetch all expenses for the user
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: 'Sheet1!A:C',
+      });
+
+      const rows = res.data.values;
+      const userRows = rows.filter(row => row[1] === username);
+
+      // Calculate total expenses
+      const totalExpenses = userRows.reduce((acc, row) => acc + parseFloat(row[2] || 0), 0);
+
+      // Fetch budget from Google Sheets
+      const budgetRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: 'Sheet1!G2', // Assuming G2 is where the budget is stored
+      });
+      const budget = parseFloat(budgetRes.data.values[0] ? budgetRes.data.values[0][0] : 0);
+
+      // Check if total expenses exceed budget
+      let budgetStatus = '';
+      if (budget && totalExpenses > budget) {
+        budgetStatus = `⚠️ You have exceeded your budget of ₹${budget}! Total expenses: ₹${totalExpenses}`;
+      } else if (budget && totalExpenses > budget * 0.8) {
+        budgetStatus = `⚠️ You are nearing your budget of ₹${budget}. Total expenses: ₹${totalExpenses}`;
+      } else {
+        budgetStatus = `✅ Your total expenses are under your budget. Total expenses: ₹${totalExpenses}`;
+      }
+
       const embed = new EmbedBuilder()
         .setTitle('✅ Expense Added')
         .setColor(0x00FF00)
@@ -48,6 +77,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           { name: 'Category', value: category, inline: true },
           { name: 'Description', value: description },
         )
+        .addFields({ name: 'Budget Status', value: budgetStatus })
         .setFooter({ text: `Added by ${username}` })
         .setTimestamp();
 
@@ -65,8 +95,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
         range: 'Sheet1!A:E',
       });
-
-      console.log('Google Sheet Data:', res.data.values); // Log the data for debugging
 
       const rows = res.data.values;
       const userRows = rows.filter(row => row[1] === username);
@@ -98,8 +126,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
         range: 'Sheet1!A:E',
       });
-
-      console.log('Google Sheet Data:', res.data.values); // Log the data for debugging
 
       const rows = res.data.values;
       const userRows = rows.filter(row => row[1] === username);
@@ -134,7 +160,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       await sheets.spreadsheets.values.update({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: `Sheet1!G2`, // Assuming G2 is where budget is saved
+        range: `Sheet1!G2`, // Assuming G2 is where the budget is saved
         valueInputOption: 'RAW',
         requestBody: {
           values: [[budget, timestamp]],
