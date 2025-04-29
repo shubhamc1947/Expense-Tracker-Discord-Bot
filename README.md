@@ -76,7 +76,7 @@ Create a Google Sheets document to store the expenses. You can start with the fo
 | 2025-04-29 12:00  | 100    | Food      | Lunch       |     | 1000   | 2025-04-01    |
 | ...               | ...    | ...       | ...         |     | ...    | ...           |
 
-- Make sure the sheet has the appropriate columns for `Date & Time`, `Username`, `Amount`, `Category`, `Description`, `Budget`, and `Budget Set On`.
+- Make sure the sheet has the appropriate columns for `Date & Time`,`Amount`, `Category`, `Description`, `Budget`, and `Budget Set On`.
 
 ### Step 6: Register Slash Commands
 Run the following command to register your bot's slash commands with Discord:

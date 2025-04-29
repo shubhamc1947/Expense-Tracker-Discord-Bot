@@ -21,7 +21,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const sheets = google.sheets({ version: 'v4', auth: await auth.getClient() });
-  const username = interaction.user.username;
 
   // 🔹 /addexpense
   if (interaction.commandName === 'addexpense') {
@@ -33,41 +32,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Sheet1!A:E',
+        range: 'Sheet1!A:D',
         valueInputOption: 'RAW',
         requestBody: {
-          values: [[timestamp, username, amount, category, description]],
+          values: [[timestamp, amount, category, description]],
         },
       });
 
-      // Fetch all expenses for the user
+      // Calculate total expenses
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
         range: 'Sheet1!A:C',
       });
 
       const rows = res.data.values;
-      const userRows = rows.filter(row => row[1] === username);
+        const totalExpenses = rows.slice(1).reduce((acc, row) => acc + parseFloat(row[1] || 0), 0);
 
-      // Calculate total expenses
-      const totalExpenses = userRows.reduce((acc, row) => acc + parseFloat(row[2] || 0), 0);
-
-      // Fetch budget from Google Sheets
-      const budgetRes = await sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Sheet1!G2', // Assuming G2 is where the budget is stored
-      });
-      const budget = parseFloat(budgetRes.data.values[0] ? budgetRes.data.values[0][0] : 0);
-
-      // Check if total expenses exceed budget
-      let budgetStatus = '';
-      if (budget && totalExpenses > budget) {
-        budgetStatus = `⚠️ You have exceeded your budget of ₹${budget}! Total expenses: ₹${totalExpenses}`;
-      } else if (budget && totalExpenses > budget * 0.8) {
-        budgetStatus = `⚠️ You are nearing your budget of ₹${budget}. Total expenses: ₹${totalExpenses}`;
-      } else {
-        budgetStatus = `✅ Your total expenses are under your budget. Total expenses: ₹${totalExpenses}`;
-      }
+        
 
       const embed = new EmbedBuilder()
         .setTitle('✅ Expense Added')
@@ -77,8 +58,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
           { name: 'Category', value: category, inline: true },
           { name: 'Description', value: description },
         )
-        .addFields({ name: 'Budget Status', value: budgetStatus })
-        .setFooter({ text: `Added by ${username}` })
+        .addFields({ name: 'Total Expenses', value: `₹${totalExpenses}` })
+        .setFooter({ text: `Added at ${timestamp}` })
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
@@ -93,23 +74,22 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Sheet1!A:E',
+        range: 'Sheet1!A:D',
       });
 
       const rows = res.data.values;
-      const userRows = rows.filter(row => row[1] === username);
-      if (userRows.length === 0) {
-        return interaction.reply('You have no expenses recorded.');
+      if (rows.length === 0) {
+        return interaction.reply('No expenses recorded.');
       }
 
       const embed = new EmbedBuilder()
-        .setTitle(`🧾 All Expenses for ${username}`)
+        .setTitle(`🧾 All Expenses`)
         .setColor(0x3498db)
         .setTimestamp();
 
-      userRows.forEach(row => {
-        const [date, , amount, category, desc] = row;
-        embed.addFields({ name: `${category} - ₹${amount}`, value: `${desc} (${date})` });
+      rows.forEach(row => {
+        const [date, amount, category, description] = row;
+        embed.addFields({ name: `${category} - ₹${amount}`, value: `${description} (${date})` });
       });
 
       await interaction.reply({ embeds: [embed] });
@@ -119,68 +99,32 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  // 🔹 /summary (Last 5 Transactions)
+  // 🔹 /summary (Total of All Transactions)
   if (interaction.commandName === 'summary') {
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Sheet1!A:E',
+        range: 'Sheet1!A:D',
       });
 
       const rows = res.data.values;
-      const userRows = rows.filter(row => row[1] === username);
-      const recentTransactions = userRows.slice(-5).reverse(); // Last 5 transactions
+      const totalAmount = rows.slice(1).reduce((acc, row) => acc + parseFloat(row[1] || 0), 0);
 
-      if (recentTransactions.length === 0) {
-        return interaction.reply('No recent transactions found.');
+
+      if (rows.length === 0) {
+        return interaction.reply('No transactions found.');
       }
 
       const embed = new EmbedBuilder()
-        .setTitle(`🧾 Last 5 Transactions for ${username}`)
+        .setTitle('🧾 Total Expense Summary')
         .setColor(0xf1c40f)
+        .addFields({ name: 'Total Amount Spent', value: `₹${totalAmount}` })
         .setTimestamp();
-
-      recentTransactions.forEach(row => {
-        const [date, , amount, category, desc] = row;
-        embed.addFields({ name: `${category} - ₹${amount}`, value: `${desc} (${date})` });
-      });
 
       await interaction.reply({ embeds: [embed] });
     } catch (err) {
       console.error('❌ Error:', err);
       await interaction.reply('Error retrieving summary.');
-    }
-  }
-
-  // 🔹 /setbudget (Set Monthly Budget)
-  if (interaction.commandName === 'setbudget') {
-    const budget = interaction.options.getNumber('budget');
-    const timestamp = new Date().toLocaleString();
-
-    try {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: `Sheet1!G2`, // Assuming G2 is where the budget is saved
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: [[budget, timestamp]],
-        },
-      });
-
-      const embed = new EmbedBuilder()
-        .setTitle('✅ Budget Set')
-        .setColor(0x00FF00)
-        .addFields(
-          { name: 'Monthly Budget', value: `₹${budget}`, inline: true },
-          { name: 'Set On', value: timestamp },
-        )
-        .setFooter({ text: `Budget set by ${username}` })
-        .setTimestamp();
-
-      await interaction.reply({ embeds: [embed] });
-    } catch (error) {
-      console.error('❌ Error:', error);
-      await interaction.reply('There was an error setting your budget.');
     }
   }
 });

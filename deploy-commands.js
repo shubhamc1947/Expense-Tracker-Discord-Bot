@@ -28,14 +28,7 @@ const commands = [
     .setDescription('List all expenses'),
   new SlashCommandBuilder()
     .setName('summary')
-    .setDescription('Get last 5 transactions'),
-  new SlashCommandBuilder()
-    .setName('setbudget')
-    .setDescription('Set a monthly budget')
-    .addNumberOption(option =>
-      option.setName('budget')
-        .setDescription('Monthly budget')
-        .setRequired(true)),
+    .setDescription('Get total of all transactions'),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
